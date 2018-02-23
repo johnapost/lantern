@@ -1,0 +1,12 @@
+{
+  "name": "a-lantern",
+  "version": "0.1.0",
+  "description": "Evaluate page performance",
+  "main": "index.js",
+  "keywords": [
+    "puppeteer",
+    "headless-chrome"
+  ],
+  "author": "John Apostol <notimetobeidle@gmail.com>",
+  "license": "ISC"
+}
