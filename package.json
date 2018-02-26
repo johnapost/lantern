@@ -10,7 +10,7 @@
   "author": "John Apostol <notimetobeidle@gmail.com>",
   "main": "index.js",
   "scripts": {
-    "test": "ava"
+    "start": "ava ./index.js"
   },
   "dependencies": {
     "puppeteer": "^1.1.0"
