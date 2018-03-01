@@ -32,15 +32,48 @@ test('google', async t => {
   const client = await page.target().createCDPSession()
   await client.send('Performance.enable')
 
+  // Enable JS and CSS coverage
+  await Promise.all([
+    page.coverage.startJSCoverage(),
+    page.coverage.startCSSCoverage()
+  ])
+
   await page.tracing.start({ path: './dumps/trace.json' })
   await page.goto('https://thezebra.com')
 
   const firstMeaningfulPaint = await getFirstMeaningfulPaint(page, client)
 
+  const [jsCoverage, cssCoverage] = await Promise.all([
+    page.coverage.stopJSCoverage(),
+    page.coverage.stopCSSCoverage()
+  ])
+
+  let jsTotalBytes = 0;
+  let jsUsedBytes = 0;
+  let cssTotalBytes = 0;
+  let cssUsedBytes = 0;
+
+  for (const entry of jsCoverage) {
+    jsTotalBytes += entry.text.length
+    for (const range of entry.ranges) {
+      jsUsedBytes += range.end - range.start - 1
+    }
+  }
+
+  for (const entry of cssCoverage) {
+    cssTotalBytes += entry.text.length
+    for (const range of entry.ranges) {
+      cssUsedBytes += range.end - range.start - 1
+    }
+  }
+
   await page.tracing.stop()
   browser.close()
 
-  console.log('\nMilliseconds until First Meaningful Paint', firstMeaningfulPaint)
+  console.log('\n')
+  console.log(`Milliseconds until First Meaningful Paint: ${firstMeaningfulPaint}`)
+  console.log(`Unused JS code: ${100 - (jsUsedBytes / jsTotalBytes * 100)}%`)
+  console.log(`Unused CSS code: ${100 - (cssUsedBytes / cssTotalBytes * 100)}%`)
 
   t.pass()
 })
