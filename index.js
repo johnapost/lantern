@@ -14,8 +14,6 @@ const getFirstMeaningfulPaint = async (page, client) => {
     return await getFirstMeaningfulPaint(page, client)
   }
 
-  console.log(metrics)
-
   // Time that we actually navigate to the page
   const navigationStart = metrics.filter(({ name }) => name === 'NavigationStart')[0].value
 
@@ -23,26 +21,7 @@ const getFirstMeaningfulPaint = async (page, client) => {
   return (firstMeaningfulPaint - navigationStart) * 1000
 }
 
-test('google', async t => {
-  // Make dumps dir
-  if (!fs.existsSync('./dumps')) fs.mkdirSync('./dumps')
-
-  const browser = await puppeteer.launch()
-  const page = await browser.newPage()
-  const client = await page.target().createCDPSession()
-  await client.send('Performance.enable')
-
-  // Enable JS and CSS coverage
-  await Promise.all([
-    page.coverage.startJSCoverage(),
-    page.coverage.startCSSCoverage()
-  ])
-
-  await page.tracing.start({ path: './dumps/trace.json' })
-  await page.goto('https://thezebra.com')
-
-  const firstMeaningfulPaint = await getFirstMeaningfulPaint(page, client)
-
+const getCodeCoverage = async (page) => {
   const [jsCoverage, cssCoverage] = await Promise.all([
     page.coverage.stopJSCoverage(),
     page.coverage.stopCSSCoverage()
@@ -67,13 +46,38 @@ test('google', async t => {
     }
   }
 
-  await page.tracing.stop()
+  return {
+    jsCoverage: `${100 - (jsUsedBytes / jsTotalBytes * 100)}%`,
+    cssCoverage: `${100 - (cssUsedBytes / cssTotalBytes * 100)}%`
+  }
+}
+
+test('google', async t => {
+  // Make dumps dir
+  if (!fs.existsSync('./dumps')) fs.mkdirSync('./dumps')
+
+  const browser = await puppeteer.launch()
+  const page = await browser.newPage()
+  const client = await page.target().createCDPSession()
+  await client.send('Performance.enable')
+
+  // Enable JS and CSS coverage
+  await Promise.all([
+    page.coverage.startJSCoverage(),
+    page.coverage.startCSSCoverage()
+  ])
+
+  await page.goto('https://www.google.com')
+
+  const firstMeaningfulPaint = await getFirstMeaningfulPaint(page, client)
+  const { jsCoverage, cssCoverage } = await getCodeCoverage(page)
+
   browser.close()
 
   console.log('\n')
   console.log(`Milliseconds until First Meaningful Paint: ${firstMeaningfulPaint}`)
-  console.log(`Unused JS code: ${100 - (jsUsedBytes / jsTotalBytes * 100)}%`)
-  console.log(`Unused CSS code: ${100 - (cssUsedBytes / cssTotalBytes * 100)}%`)
+  console.log(`Unused JS code: ${jsCoverage}`)
+  console.log(`Unused CSS code: ${cssCoverage}`)
 
   t.pass()
 })
