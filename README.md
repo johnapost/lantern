@@ -1,2 +1,2 @@
-# a-lantern
+# lantern
 Evaluate page performance
